@@ -16,11 +16,12 @@ from thino.abc import BaseObject
 class Client:
     def __init__(self):
         self.BASE_URL = "https://thino.pics/api/v1"
+        self.SEARCH_URL = "https://thino.pics/search"
         self.ENDPOINTS = ["tomboy", "neko", "femboy", "porn", "hentai", "thighs"]
         self.session = None
         self.started = False
 
-    async def __get(self, endpoint: Optional[str] = None):
+    async def __get(self, url: Optional[str],endpoint: Optional[str] = None):
         if self.started == False:
             await self.start()
             self.started = True
@@ -28,10 +29,24 @@ class Client:
             raise ValueError(
                 f"{endpoint} is not a valid endpoint, please use one of {self.ENDPOINTS}"
             )
+
+        
+        
         if endpoint is None:
             endpoint = random.choice(self.ENDPOINTS)
         async with self.session.get(f"{self.BASE_URL}/{endpoint}") as response:  # type: ignore
             return BaseObject(await response.json(), endpoint)
+
+    async def _search(self, filename: Optional[str]):
+        if self.started == False:
+            await self.start()
+            self.started = True
+
+        if filename is None:
+            return "Please specify a filename"
+
+        async with self.session.get(f"{self.SEARCH_URL}/{filename}") as response:
+            return BaseObject(await response.json(), filename)
 
     async def start(self):
         self.session = aiohttp.ClientSession(
@@ -39,6 +54,9 @@ class Client:
                 "User-Agent": f"Thino-Client @ {__version__}/ Python/{platform.python_version()}/ aiohttp/{aiohttp.__version__} PS: VarMonke is cute"
             }
         )
+
+    async def search(self, filename: Optional[str]) -> BaseObject:
+        return await self._search(filename)
 
     async def tomboy(self) -> BaseObject:
         return await self.__get("tomboy")
